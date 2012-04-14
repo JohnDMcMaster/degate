@@ -292,13 +292,24 @@ namespace degate {
   typedef Image<PixelPolicy_RGBA, StoragePolicy_PersistentFile> PersistentImage_RGBA;
   typedef std::tr1::shared_ptr<PersistentImage_RGBA> PersistentImage_RGBA_shptr;
 
-  typedef Image<PixelPolicy_RGBA, StoragePolicy_Memory> RendererImage;
-  typedef std::tr1::shared_ptr<RendererImage> RendererImage_shptr;
 
+  typedef Image<PixelPolicy_RGBA, StoragePolicy_Memory> MemoryImage;
+  typedef std::tr1::shared_ptr<MemoryImage> MemoryImage_shptr;
+
+
+  typedef Image<PixelPolicy_GS_BYTE, StoragePolicy_Memory> MemoryImage_GS_BYTE;
+  typedef Image<PixelPolicy_GS_DOUBLE, StoragePolicy_Memory> MemoryImage_GS_DOUBLE;
+  typedef Image<PixelPolicy_RGBA, StoragePolicy_Memory> MemoryImage_RGBA;
+  typedef std::tr1::shared_ptr<MemoryImage_GS_BYTE> MemoryImage_GS_BYTE_shptr;
+  typedef std::tr1::shared_ptr<MemoryImage_GS_DOUBLE> MemoryImage_GS_DOUBLE_shptr;
+  typedef std::tr1::shared_ptr<MemoryImage_RGBA> MemoryImage_shptr;
+
+  typedef MemoryImage RendererImage;
+  typedef MemoryImage_shptr RendererImage_shptr;
 
   // typedef for the image format in which we store template images within memory
-  typedef Image<PixelPolicy_RGBA, StoragePolicy_Memory> GateTemplateImage;
-  typedef std::tr1::shared_ptr<GateTemplateImage> GateTemplateImage_shptr;
+  typedef MemoryImage GateTemplateImage;
+  typedef MemoryImage_shptr GateTemplateImage_shptr;
 
 
 }

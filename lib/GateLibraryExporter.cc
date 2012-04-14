@@ -23,6 +23,7 @@
 #include <GateLibraryExporter.h>
 #include <FileSystem.h>
 #include <ImageHelper.h>
+#include <DegateHelper.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -41,8 +42,7 @@
 using namespace std;
 using namespace degate;
 
-void GateLibraryExporter::export_data(std::string const& filename, GateLibrary_shptr gate_lib)
-  throw( InvalidPathException, InvalidPointerException, std::runtime_error ) {
+void GateLibraryExporter::export_data(std::string const& filename, GateLibrary_shptr gate_lib) {
 
   if(gate_lib == NULL) throw InvalidPointerException("Gate library pointer is NULL.");
 
@@ -72,8 +72,7 @@ void GateLibraryExporter::export_data(std::string const& filename, GateLibrary_s
 
 void GateLibraryExporter::add_gates(xmlpp::Element* templates_elem,
 				    GateLibrary_shptr gate_lib,
-				    std::string const& directory)
-  throw(std::runtime_error ) {
+				    std::string const& directory) {
 
   for(GateLibrary::template_iterator iter = gate_lib->begin();
       iter != gate_lib->end(); ++iter) {
@@ -104,8 +103,7 @@ void GateLibraryExporter::add_gates(xmlpp::Element* templates_elem,
 
 void GateLibraryExporter::add_images(xmlpp::Element* gate_elem,
 				     GateTemplate_shptr gate_tmpl,
-				     std::string const& directory)
-  throw(std::runtime_error ) {
+				     std::string const& directory) {
 
   // export images
 
@@ -177,11 +175,10 @@ void GateLibraryExporter::add_implementations(xmlpp::Element* gate_elem,
   for(GateTemplate::implementation_iter iter = gate_tmpl->implementations_begin();
       iter != gate_tmpl->implementations_end(); ++iter) {
 
-
     GateTemplate::IMPLEMENTATION_TYPE t = iter->first;
     std::string const& code = iter->second;
 
-    std::cout << "Code: " << code;
+    //std::cout << "Code: " << code;
     if(t != GateTemplate::UNDEFINED && !code.empty()) {
 
       xmlpp::Element* impl_elem = implementations_elem->add_child("implementation");
@@ -199,14 +196,11 @@ void GateLibraryExporter::add_implementations(xmlpp::Element* gate_elem,
       }
       std::string filename(fmter.str());
 
-
-      std::ofstream myfile;
-      myfile.open(join_pathes(directory, filename).c_str());
-      myfile << code;
-      myfile.close();
+      write_string_to_file(join_pathes(directory, filename), code);
 
       impl_elem->set_attribute("type", GateTemplate::get_impl_type_as_string(t));
       impl_elem->set_attribute("file", filename);
     }
   }
 }
+

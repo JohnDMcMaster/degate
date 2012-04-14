@@ -49,7 +49,7 @@ const std::string Via::get_direction_as_string() const {
   }
 }
 
-Via::DIRECTION Via::get_via_direction_from_string(std::string const& via_direction_str) throw() {
+Via::DIRECTION Via::get_via_direction_from_string(std::string const& via_direction_str) {
 
   if(via_direction_str == "up") return Via::DIRECTION_UP;
   else if(via_direction_str == "down") return Via::DIRECTION_DOWN;
@@ -59,7 +59,7 @@ Via::DIRECTION Via::get_via_direction_from_string(std::string const& via_directi
 
 const std::string Via::get_descriptive_identifier() const {
   if(has_name()) {
-    boost::format fmter("%1% (%2%)");
+    boost::format fmter("via %1% (%2%)");
     fmter % get_name() % get_object_id();
     return fmter.str();
   }

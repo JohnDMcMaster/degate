@@ -88,9 +88,20 @@ void LogicModel::print(std::ostream & os) {
 
 }
 
+bool LogicModel::exists_layer_id(layer_collection const& layers, layer_id_t lid) const {
+  BOOST_FOREACH(Layer_shptr l, layers) {
+    if(l != NULL && l->has_valid_layer_id() && l->get_layer_id() == lid)
+      return true;
+  }
+  return false;
+}
+
 object_id_t LogicModel::get_new_object_id() {
   object_id_t new_id = ++object_id_counter;
-  while(objects.find(new_id) != objects.end()) {
+  while(objects.find(new_id) != objects.end() ||
+	(gate_library != NULL && gate_library->exists_template(new_id)) ||
+	nets.find(new_id) != nets.end() ||
+	exists_layer_id(layers, new_id) ) {
     new_id = ++object_id_counter;
   }
   return new_id;
@@ -99,8 +110,10 @@ object_id_t LogicModel::get_new_object_id() {
 
 LogicModel::LogicModel(unsigned int width, unsigned int height, unsigned int layers) :
   bounding_box(width, height),
-  main_module(new Module("main_module")),
+  main_module(new Module("main_module", "", true)),
   object_id_counter(0) {
+
+  gate_library = GateLibrary_shptr(new GateLibrary());
 
   for(unsigned int i = 0; i < layers; i++)
     get_create_layer(i);
@@ -108,7 +121,6 @@ LogicModel::LogicModel(unsigned int width, unsigned int height, unsigned int lay
   if(layers > 0)
     set_current_layer(0);
 
-  gate_library = GateLibrary_shptr(new GateLibrary());
 }
 
 LogicModel::~LogicModel() {
@@ -516,6 +528,10 @@ void LogicModel::update_ports(GateTemplate_shptr gate_template) {
 }
 
 
+layer_id_t LogicModel::get_new_layer_id() {
+  return get_new_object_id();
+}
+
 void LogicModel::add_layer(layer_position_t pos, Layer_shptr new_layer) {
 
   if(layers.size() <= pos) layers.resize(pos + 1);
@@ -524,6 +540,7 @@ void LogicModel::add_layer(layer_position_t pos, Layer_shptr new_layer) {
     throw DegateLogicException("There is already a layer for this layer number.");
   else {
     if(!new_layer->is_empty()) throw DegateLogicException("You must add an empty layer.");
+    if(!new_layer->has_valid_layer_id()) new_layer->set_layer_id(get_new_layer_id());
     layers[pos] = new_layer;
     new_layer->set_layer_pos(pos);
   }
@@ -540,6 +557,15 @@ void LogicModel::add_layer(layer_position_t pos) {
 
 Layer_shptr LogicModel::get_layer(layer_position_t pos) {
   return layers.at(pos);
+}
+
+Layer_shptr LogicModel::get_layer_by_id(layer_id_t lid) {
+  BOOST_FOREACH(Layer_shptr l, layers) {
+    if(l->has_valid_layer_id() && l->get_layer_id() == lid)
+      return l;
+  }
+
+  throw CollectionLookupException("Can't find a matching layer.");
 }
 
 void LogicModel::set_layers(layer_collection layers) {
@@ -618,6 +644,11 @@ void LogicModel::add_net(Net_shptr net) {
   if(net == NULL) throw InvalidPointerException();
 
   if(!net->has_valid_object_id()) net->set_object_id(get_new_object_id());
+  if(nets.find(net->get_object_id()) != nets.end()) {
+    boost::format f("Error in add_net(). Net with ID %1% already exists");
+    f % net->get_object_id();
+    throw DegateRuntimeException(f.str());
+  }
   nets[net->get_object_id()] = net;
 }
 
@@ -685,6 +716,14 @@ LogicModel::gate_collection::iterator LogicModel::gates_end() {
   return gates.end();
 }
 
+LogicModel::via_collection::iterator LogicModel::vias_begin() {
+  return vias.begin();
+}
+
+LogicModel::via_collection::iterator LogicModel::vias_end() {
+  return vias.end();
+}
+
 LogicModel::layer_collection::iterator LogicModel::layers_begin() {
   return layers.begin();
 }
@@ -716,6 +755,11 @@ unsigned int LogicModel::get_num_layers() const {
 
 Module_shptr LogicModel::get_main_module() const {
   return main_module;
+}
+
+void LogicModel::set_main_module(Module_shptr main_module) {
+  this->main_module = main_module;
+  main_module->set_main_module(); // set the root-node-state
 }
 
 void LogicModel::reset_removed_remote_objetcs_list() {

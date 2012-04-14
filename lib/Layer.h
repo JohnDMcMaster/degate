@@ -86,10 +86,10 @@ namespace degate {
      * Add an logic model object into this layer.
      * @throw DegateRuntimeException Is thrown if the object
      *   cannot be inserted into the quadtree.
+     * @throw DegateLogicException
      */
 
-    void add_object(std::tr1::shared_ptr<PlacedLogicModelObject> o)
-      throw(DegateRuntimeException, DegateLogicException);
+    void add_object(std::tr1::shared_ptr<PlacedLogicModelObject> o);
 
 
     /**
@@ -98,9 +98,7 @@ namespace degate {
      *   cannot be removed from the quadtree.
      */
 
-    void remove_object(std::tr1::shared_ptr<PlacedLogicModelObject> o)
-      throw(DegateRuntimeException);
-
+    void remove_object(std::tr1::shared_ptr<PlacedLogicModelObject> o);
 
   public:
 
@@ -137,6 +135,11 @@ namespace degate {
     unsigned int get_height() const;
 
     /**
+     * Get the bounding box for a layer.
+     */
+    BoundingBox const& get_bounding_box() const;
+
+    /**
      * Get layer type of this layer as human readable string, e.g. the string
      * "metal" for a layer of type Layer::METAL .
      */
@@ -153,8 +156,7 @@ namespace degate {
      * @exception DegateRuntimeException This exception is thrown if the string
      *   cannot be parsed.
      */
-    static LAYER_TYPE get_layer_type_from_string(std::string const& layer_type_str)
-      throw(DegateRuntimeException);
+    static LAYER_TYPE get_layer_type_from_string(std::string const& layer_type_str);
 
 
     /**
@@ -234,7 +236,7 @@ namespace degate {
      * @see set_image()
      */
 
-    BackgroundImage_shptr get_image() throw(DegateLogicException);
+    BackgroundImage_shptr get_image();
 
     /**
      * Get the directory name for the image, that represents the
@@ -243,7 +245,7 @@ namespace degate {
      *   exception is thrown.
      */
 
-    std::string get_image_filename() const throw(DegateLogicException);
+    std::string get_image_filename() const;
 
     /**
      * Check if the layer has a background image.
@@ -259,7 +261,7 @@ namespace degate {
      * @exception DegateLogicException This excpetion is thrown if there is no background image.
      */
 
-    void unset_image() throw(DegateLogicException);
+    void unset_image();
 
     /**
      * Get the scaling manager.
@@ -277,19 +279,18 @@ namespace degate {
     /**
      * Print the layer.
      */
-    void print(std::ostream & os);
+    void print(std::ostream & os = std::cout);
 
     /**
      * Notify the layer that a shape of a logic model object changed.
      * This will adjust the quadtree.
      * @exception CollectionLookupException This exception is thrown if
-     *    there is no object in the layer, that has this object ID.
+     *    thetre is no object in the layer, that has this object ID.
      * @exception InvalidObjectIDException Is raised, if \p object_id
      *    has an invalid ID.
      */
 
-    void notify_shape_change(object_id_t object_id)
-      throw(CollectionLookupException, InvalidObjectIDException);
+    void notify_shape_change(object_id_t object_id);
 
     /**
      * Get an object at a specific position.
@@ -309,12 +310,23 @@ namespace degate {
     PlacedLogicModelObject_shptr get_object_at_position(int x, int y, int max_distance = 0);
 
     /**
-     * Check for placed gates in a region.
-     * @return Returns true, if there is a gate in the region. Else it returns false.
+     * Check for placed objects in a region of type given by template param.
+     * @return Returns true, if there is a an object of the specified type in the region.
+     *   Else it returns false.
      */
 
-    bool exists_gate_in_region(unsigned int min_x, unsigned int max_x,
-			       unsigned int min_y, unsigned int max_y);
+    template<typename LogicModelObjectType>
+    bool exists_type_in_region(unsigned int min_x, unsigned int max_x,
+			       unsigned int min_y, unsigned int max_y) {
+      for(Layer::qt_region_iterator iter = quadtree.region_iter_begin(min_x, max_x, min_y, max_y);
+	  iter != quadtree.region_iter_end(); ++iter) {
+	
+	if(std::tr1::dynamic_pointer_cast<LogicModelObjectType>(*iter) != NULL) {
+	  return true;
+	}
+      }
+      return false;      
+    }
 
 
     /**
@@ -365,7 +377,8 @@ namespace degate {
     void set_layer_pos(layer_position_t pos) { layer_pos = pos; }
 
     /**
-     * Set the layer ID.
+     * Set the layer ID. The layer ID is not an object ID. The only requirement is
+     * that each layer has a unique and position-independend ID.
      */
 
     virtual void set_layer_id(layer_id_t lid) { layer_id = lid; }

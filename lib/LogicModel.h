@@ -64,7 +64,7 @@ namespace degate {
     typedef std::map<object_id_t, PlacedLogicModelObject_shptr> object_collection;
     typedef std::map<object_id_t, Net_shptr> net_collection;
     typedef std::map<object_id_t, Annotation_shptr> annotation_collection;
-
+    typedef std::map<object_id_t, Via_shptr > via_collection;
 
     typedef std::vector<Layer_shptr> layer_collection;
     typedef std::map<object_id_t, Gate_shptr > gate_collection;
@@ -80,7 +80,7 @@ namespace degate {
 
     gate_collection gates;
     std::map<object_id_t, Wire_shptr > wires;
-    std::map<object_id_t, Via_shptr > vias;
+    via_collection vias;
     std::map<object_id_t, EMarker_shptr > emarkers;
     annotation_collection annotations;
     net_collection nets;
@@ -218,6 +218,14 @@ namespace degate {
      * should be remembered in delete log.
      */
     void remove_object(PlacedLogicModelObject_shptr o,  bool add_to_remove_list);
+
+
+    /**
+     * Create a new layer ID.
+     */
+    layer_id_t get_new_layer_id();
+
+    bool exists_layer_id(layer_collection const& layers, layer_id_t lid) const;
 
   public:
 
@@ -391,10 +399,16 @@ namespace degate {
     void add_layer(layer_position_t pos);
 
     /**
-     * Get a layer.
+     * Get a layer by its posiion index.
      */
 
     Layer_shptr get_layer(layer_position_t pos);
+
+    /**
+     * Get a layer by its ID.
+     * @exception CollectionLookupException This exception is thrown, if there is no matching layer.
+     */
+    Layer_shptr get_layer_by_id(layer_id_t lid);
 
 
     /**
@@ -503,6 +517,18 @@ namespace degate {
     gate_collection::iterator gates_end();
 
     /**
+     * Get a iterator to iterate over all vias.
+     */
+
+    via_collection::iterator vias_begin();
+
+    /**
+     * Get an end iterator for the iteration over all vias.
+     */
+
+    via_collection::iterator vias_end();
+
+    /**
      * Get a iterator to iterate over all placeable objects.
      */
 
@@ -577,6 +603,11 @@ namespace degate {
     Module_shptr get_main_module() const;
 
     /**
+     * Set main module.
+     */
+    void set_main_module(Module_shptr main_module);
+
+    /**
      *
      */
     void reset_removed_remote_objetcs_list();
@@ -596,7 +627,6 @@ namespace degate {
   };
 
 
-  typedef std::tr1::shared_ptr<LogicModel> LogicModel_shptr;
 
 }
 

@@ -663,8 +663,14 @@ void MainWin::goto_object(PlacedLogicModelObject_shptr obj_ptr) {
     else 
       layer = obj_ptr->get_layer();
 
-    highlighted_objects.clear();
-    highlighted_objects.add(obj_ptr);
+    clear_selection();
+    selected_objects.add(obj_ptr);
+    highlighted_objects.add(obj_ptr, main_project->get_logic_model()); 
+
+    assert(selected_objects.size() == 1);
+    assert(highlighted_objects.size() == 1);
+
+    if(ciWin != NULL) ciWin->set_object(obj_ptr); // update connection inspector
 
     center_view(bbox.get_center_x(), bbox.get_center_y(), layer->get_layer_pos());
   }
@@ -800,6 +806,7 @@ void MainWin::on_algorithm_finished(int slot_pos) {
 
   project_changed();
 
+  /*
   try {
     if(autosave_project(main_project, 0))
       m_statusbar.push("Autosaving project data ... done.");
@@ -807,6 +814,7 @@ void MainWin::on_algorithm_finished(int slot_pos) {
   catch(DegateRuntimeException const& ex) {
     error_dialog("Error", "Can't save project.");
   }
+  */
 }
 
 
@@ -832,27 +840,26 @@ void MainWin::on_algorithms_func_clicked(int slot_pos) {
   std::tr1::shared_ptr<GfxEditorToolSelection<DegateRenderer> > selection_tool =
     std::tr1::dynamic_pointer_cast<GfxEditorToolSelection<DegateRenderer> >(editor.get_tool());
 
-  if(selection_tool != NULL && selection_tool->has_selection()) {
+  BoundingBox bb = selection_tool != NULL && selection_tool->has_selection() ? 
+    selection_tool->get_bounding_box() : main_project->get_bounding_box();
 
-    rm.init(slot_pos, this, selection_tool->get_bounding_box(), main_project);
+  rm.init(slot_pos, this, bb, main_project);
 
-    if(rm.before_dialog(slot_pos)) {
-
-      ipWin = std::tr1::shared_ptr<InProgressWin>
-	(new InProgressWin(this, "Calculating", "Please wait while calculating.", rm.get_progress_control(slot_pos)));
-      ipWin->show();
-
-      signal_algorithm_finished_ = std::tr1::shared_ptr<Glib::Dispatcher>(new Glib::Dispatcher);
-
-      signal_algorithm_finished_->connect(sigc::bind(sigc::mem_fun(*this,
-								   &MainWin::on_algorithm_finished),
-						     slot_pos));
-
-      thread = Glib::Thread::create(sigc::bind(sigc::mem_fun(*this, &MainWin::algorithm_calc_thread),
-					       slot_pos), false);
-    }
+  if(rm.before_dialog(slot_pos)) {
+    
+    ipWin = std::tr1::shared_ptr<InProgressWin>
+      (new InProgressWin(this, "Calculating", "Please wait while calculating.", rm.get_progress_control(slot_pos)));
+    ipWin->show();
+    
+    signal_algorithm_finished_ = std::tr1::shared_ptr<Glib::Dispatcher>(new Glib::Dispatcher);
+    
+    signal_algorithm_finished_->connect(sigc::bind(sigc::mem_fun(*this,
+								 &MainWin::on_algorithm_finished),
+						   slot_pos));
+    
+    thread = Glib::Thread::create(sigc::bind(sigc::mem_fun(*this, &MainWin::algorithm_calc_thread),
+					     slot_pos), false);
   }
-
 }
 
 
@@ -1449,12 +1456,10 @@ void MainWin::object_clicked(unsigned int real_x, unsigned int real_y) {
 
   if(control_key_pressed == false){
     clear_selection();
-    highlighted_objects.clear();
   }
 
 
-  if(add_to_selection) {
-    // add to selection
+  if(add_to_selection) { // add to selection
     if(plo != NULL) {
       selected_objects.add(plo);
       highlighted_objects.add(plo, lmodel);
@@ -1574,6 +1579,34 @@ void MainWin::on_popup_menu_set_name() {
 
   }
 }
+
+void MainWin::on_popup_menu_set_description() {
+  if(main_project) {
+
+    Glib::ustring description;
+
+    if(selected_objects.empty()) {
+      error_dialog("Error", "Please select one or more objects.");
+      return;
+    }
+    else if(PlacedLogicModelObject_shptr plo = selected_objects.get_single_object<PlacedLogicModelObject>()) {
+      description = plo->get_description();
+    }
+
+    GenericTextInputWin input(this, "Set description", "Please set a description", description);
+    Glib::ustring str;
+    if(input.run(description) == true) {
+
+      for(ObjectSet::const_iterator it = selected_objects.begin(); it != selected_objects.end(); it++) {
+	(*it)->set_description(description);
+      }
+      project_changed();
+      editor.update_screen();
+    }
+
+  }
+}
+
 
 void MainWin::on_popup_menu_add_vertical_grid_line() {
   if(main_project != NULL) {
@@ -1768,7 +1801,10 @@ void MainWin::on_menu_logic_show_annotations() {
 }
 
 void MainWin::on_menu_logic_show_modules() {
-  if(main_project != NULL && modWin != NULL) modWin->show();
+  if(main_project != NULL && modWin != NULL) {
+    modWin->show();
+    project_changed();
+  }
 }
 
 void MainWin::on_menu_move_gate_into_module() {
@@ -1944,7 +1980,7 @@ void MainWin::on_menu_layer_export_background_image() {
     if(layer->has_background_image()) {
 
 
-      Gtk::FileChooserDialog dialog("Please select a file name", Gtk::FILE_CHOOSER_ACTION_OPEN);
+      Gtk::FileChooserDialog dialog("Please select a file name", Gtk::FILE_CHOOSER_ACTION_SAVE);
       dialog.set_transient_for(*this);
 
       dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);

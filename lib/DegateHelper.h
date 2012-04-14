@@ -22,7 +22,6 @@
 #ifndef __DEGATEHELPER_H__
 #define __DEGATEHELPER_H__
 
-#include <degate.h>
 
 #define LENGTH_TO_MAX(l) (l > 0 ? l - 1 : 0)
 
@@ -62,6 +61,15 @@ namespace degate {
    */
   void write_string_to_file(std::string const& path,
 			    std::string const& content);
+
+
+  /**
+   * Execute a command.
+   * @param command The command to execute.
+   * @param params list of parameters.
+   * @returns Returns the exit code.
+   */
+  int execute_command(std::string const& command, std::list<std::string> const& params);
 }
 
 #endif

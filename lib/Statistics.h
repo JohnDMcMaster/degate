@@ -33,7 +33,7 @@ namespace degate {
    *   vector's size is 0.
    */
   template<typename T>
-  inline T median(std::vector<T> & v) throw(DegateRuntimeException) {
+  inline T median(std::vector<T> & v) {
 
     if(v.empty())
       throw DegateRuntimeException("Error in median(): The vector is empty.");
@@ -56,7 +56,7 @@ namespace degate {
    *   vector's size is 0.
    */
   template<typename T>
-  inline T average(std::vector<T> const& v) throw(DegateRuntimeException) {
+  inline T average(std::vector<T> const& v) {
 
     if(v.empty())
       throw DegateRuntimeException("Error in average(): The vector is empty.");
@@ -77,7 +77,7 @@ namespace degate {
    *   vector's size is 0.
    */
   template<typename T>
-  inline T standard_deviation(std::vector<T> const& v) throw(DegateRuntimeException) {
+  inline T standard_deviation(std::vector<T> const& v) {
 
     if(v.empty())
       throw DegateRuntimeException("Error in standard_deviation(): The vector is empty.");
@@ -87,64 +87,11 @@ namespace degate {
     for(typename std::vector<T>::const_iterator iter = v.begin(); iter != v.end(); ++iter)
       sum += pow(avg - *iter, 2);
 
-    return sqrt(sum);
+    return sqrt(sum/(double)v.size());
   }
 
 
-  /**
-   * Get the minimum pixel value of a single channel image.
-   */
-  template<typename ImageType>
-  typename ImageType::pixel_type get_minimum(std::tr1::shared_ptr<ImageType> img) {
-
-    assert_is_single_channel_image<ImageType>();
-    typename ImageType::pixel_type minimum = img->get_pixel(0, 0);
-
-    for(unsigned int y = 0; y < img->get_height(); y++)
-      for(unsigned int x = 0; x < img->get_width(); x++) {
-	typename ImageType::pixel_type p = img->get_pixel(x, y);
-	if(p < minimum) minimum = p;
-      }
-    return minimum;
-  }
-
-  /**
-   * Get the maximum pixel value of a single channel image.
-   */
-  template<typename ImageType>
-  typename ImageType::pixel_type get_maximum(std::tr1::shared_ptr<ImageType> img) {
-
-    assert_is_single_channel_image<ImageType>();
-    typename ImageType::pixel_type maximum = img->get_pixel(0, 0);
-
-    for(unsigned int y = 0; y < img->get_height(); y++)
-      for(unsigned int x = 0; x < img->get_width(); x++) {
-	typename ImageType::pixel_type p = img->get_pixel(x, y);
-	if(p > maximum) maximum = p;
-      }
-    return maximum;
-  }
-
-
-  /**
-   * Calulate the average pixel value of a single channel image.
-   */
-  template<typename ImageType>
-  double average(std::tr1::shared_ptr<ImageType> img) {
-
-    assert_is_single_channel_image<ImageType>();
-
-    double sum = 0;
-
-    for(unsigned int y = 0; y < img->get_height(); y++)
-      for(unsigned int x = 0; x < img->get_width(); x++) {
-	sum += img->get_pixel(x, y);
-      }
-
-    return sum / (double)(img->get_height() * img->get_width());
-  }
-
-
+  
 }
 
 

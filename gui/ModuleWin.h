@@ -60,7 +60,7 @@ class ModuleWin : public Gtk::Window, private GladeFileLoader {
     Gtk::TreeModelColumn<Glib::ustring> m_col_name;
     Gtk::TreeModelColumn<Glib::ustring> m_col_gate_port;
     Gtk::TreeModelColumn<Glib::ustring> m_col_gate;
-    Gtk::TreeModelColumn<degate::Gate_shptr> m_col_object_ptr;
+    Gtk::TreeModelColumn<degate::GatePort_shptr> m_col_object_ptr;
   };
 
  public:
@@ -94,10 +94,15 @@ class ModuleWin : public Gtk::Window, private GladeFileLoader {
   degate::LogicModel_shptr lmodel;
 
   Gtk::Button* add_button;
-  Gtk::Button* remove_button;
-  Gtk::Button* edit_button;
   Gtk::Button* goto_button;
   Gtk::Button* close_button;
+  Gtk::Button* determine_ports_button;
+  Gtk::Button* export_button;
+
+
+  Gtk::Button* move_button;
+  Gtk::Button* remove_button;
+
 
   Glib::RefPtr<TreeStoreModuleHierarchy> treemodel_modules;
   Gtk::TreeView* treeview_modules;
@@ -129,15 +134,24 @@ class ModuleWin : public Gtk::Window, private GladeFileLoader {
   virtual void on_add_button_clicked();
   virtual void on_remove_button_clicked();
 
-  virtual void on_edit_button_clicked();
+  virtual void on_move_button_clicked();
+  virtual void on_determine_ports_button_clicked();
+  virtual void on_export_button_clicked();
 
   virtual void on_module_selection_changed();
   virtual void on_gate_selection_changed();
   virtual void on_port_selection_changed();
 
+  virtual void on_module_name_edited(const Glib::ustring& path, const Glib::ustring& new_text);
+  virtual void on_module_type_edited(const Glib::ustring& path, const Glib::ustring& new_text);
+
+  virtual void on_module_port_name_edited(const Glib::ustring& path, const Glib::ustring& new_text);
+
   void update_logic_model(Gtk::TreeModel::Children const& children,
 			  degate::Module_shptr parent_module);
 
+
+  degate::Module_shptr get_selected_module();
 
 };
 

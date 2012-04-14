@@ -43,6 +43,18 @@ void ViaMatchingGUI::init(Gtk::Window *parent,
   this->project = project;
 }
 
+bool ViaMatchingGUI::check_vias(LogicModel_shptr lmodel, Layer_shptr layer) {
+
+  int i = 0;
+
+  for(LogicModel::via_collection::iterator viter = lmodel->vias_begin();
+      viter != lmodel->vias_end(); ++viter) {
+    Via_shptr via = viter->second;
+    if(via->get_layer() == layer) i++;
+  }
+  return i > 0;
+}
+
 bool ViaMatchingGUI::before_dialog() {
 
   assert(project != NULL);
@@ -52,6 +64,15 @@ bool ViaMatchingGUI::before_dialog() {
 
   Layer_shptr layer = lmodel->get_current_layer();
   assert(layer != NULL);
+
+  if(!check_vias(lmodel, layer)) {
+    Gtk::MessageDialog dialog(*parent,
+			      "There must be at least one via on the current layer, which can be used as a template.",
+			      true, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK);
+    dialog.set_title("Error");
+    dialog.run();
+    return false;
+  }
 
   if(bounding_box.get_max_x() == 0 && bounding_box.get_max_y() == 0) {
     Gtk::MessageDialog dialog(*parent,
@@ -64,15 +85,18 @@ bool ViaMatchingGUI::before_dialog() {
     else bounding_box = BoundingBox(project->get_width(), project->get_height());
   }
 
-  unsigned int median_filter_width = 3;
-  double sigma = 0.5;
+  double threshold_match = matching->get_threshold_match();
+  unsigned int 
+    via_diameter = project->get_default_pin_diameter(),
+    merge_n_vias = matching->get_merge_n_vias();
+  
+  ViaMatchingParamsWin wm(parent, threshold_match, via_diameter, merge_n_vias);
 
-  ViaMatchingParamsWin wm(parent, median_filter_width, sigma);
+  if(wm.run(&threshold_match, &via_diameter, &merge_n_vias)) {
 
-  if(wm.run(&median_filter_width, &sigma)) {
-
-    matching->set_median_filter_width(median_filter_width);
-    matching->set_sigma(sigma);
+    matching->set_threshold_match(threshold_match);
+    matching->set_diameter(via_diameter);
+    matching->set_merge_n_vias(merge_n_vias);
 
     return true;
   }

@@ -156,13 +156,11 @@ void TemplateMatching::prepare_background_images(ScalingManager_shptr sm,
   tmp =  TileImage_GS_BYTE_shptr(new TileImage_GS_BYTE(bounding_box.get_width(),
 						       bounding_box.get_height()));;
 
-  extract_partial_image<TileImage_GS_BYTE, BackgroundImage>(tmp,
-							    img_normal,
-							    bounding_box);
+  extract_partial_image(tmp, img_normal, bounding_box);
 
   #ifdef USE_MEDIAN_FILTER
 
-  median_filter<TileImage_GS_BYTE, TileImage_GS_BYTE>(gs_img_normal, tmp, USE_MEDIAN_FILTER);
+  median_filter(gs_img_normal, tmp, USE_MEDIAN_FILTER);
 
 
   #elif defined(USE_GAUSS_FILTER)
@@ -174,14 +172,12 @@ void TemplateMatching::prepare_background_images(ScalingManager_shptr sm,
 
   gaussian_blur_kernel->print();
 
-  convolve<TileImage_GS_BYTE, TileImage_GS_BYTE>(gs_img_normal, tmp, gaussian_blur_kernel);
+  convolve(gs_img_normal, tmp, gaussian_blur_kernel);
 
   #endif
 
 #else
-  extract_partial_image<TileImage_GS_BYTE, BackgroundImage>(gs_img_normal,
-							    img_normal,
-							    bounding_box);
+  extract_partial_image(gs_img_normal, img_normal, bounding_box);
 #endif
 
 
@@ -197,21 +193,17 @@ void TemplateMatching::prepare_background_images(ScalingManager_shptr sm,
     tmp =  TileImage_GS_BYTE_shptr(new TileImage_GS_BYTE(bounding_box.get_width(),
 							 bounding_box.get_height()));;
 
-    extract_partial_image<TileImage_GS_BYTE, BackgroundImage>(tmp,
-							      img_scaled,
-							      scaled_bounding_box);
+    extract_partial_image(tmp, img_scaled, scaled_bounding_box);
 
-    median_filter<TileImage_GS_BYTE, TileImage_GS_BYTE>(gs_img_scaled, tmp, USE_MEDIAN_FILTER);
+    median_filter(gs_img_scaled, tmp, USE_MEDIAN_FILTER);
 #else
 
-    extract_partial_image<TileImage_GS_BYTE, BackgroundImage>(gs_img_scaled,
-							      img_scaled,
-							      scaled_bounding_box);
+    extract_partial_image(gs_img_scaled, img_scaled, scaled_bounding_box);
 #endif
   }
 
-  save_image<TileImage_GS_BYTE>("/tmp/xxx1.tif", gs_img_normal);
-  save_image<TileImage_GS_BYTE>("/tmp/xxx2.tif", gs_img_scaled);
+  //save_image("/tmp/xxx1.tif", gs_img_normal);
+  //save_image("/tmp/xxx2.tif", gs_img_scaled);
 
 }
 
@@ -319,14 +311,14 @@ void TemplateMatching::run() {
 double TemplateMatching::subtract_mean(TempImage_GS_BYTE_shptr img,
 				       TempImage_GS_DOUBLE_shptr zero_mean_img) const {
 
-  double mean = average<TempImage_GS_BYTE>(img);
+  double mean = average(img);
 
   double sum_over_zero_mean_img = 0;
   unsigned int x, y;
 
   for(y = 0; y < img->get_height(); y++)
     for(x = 0; x < img->get_width(); x++) {
-      double tmp = img->get_pixel_as<double>(x, y) - mean;
+      double tmp = img->get_pixel_as<gs_double_pixel_t>(x, y) - mean;
       zero_mean_img->set_pixel(x, y, tmp);
       sum_over_zero_mean_img += tmp * tmp;
     }
@@ -357,22 +349,22 @@ TemplateMatching::prepared_template TemplateMatching::prepare_template(GateTempl
   GateTemplateImage_shptr tmpl_img(new GateTemplateImage(w, h));
 
   //#ifdef USE_MEDIAN_FILERX
-  //  median_filter<GateTemplateImage, GateTemplateImage>(tmpl_img, tmpl_img_orig, 3);
+  //  median_filter(tmpl_img, tmpl_img_orig, 3);
   //#else
-  copy_image<GateTemplateImage, GateTemplateImage>(tmpl_img, tmpl_img_orig);
+  copy_image(tmpl_img, tmpl_img_orig);
   //#endif
 
-  save_image<GateTemplateImage>("/tmp/xxx3.tif", tmpl_img);
+  //save_image("/tmp/xxx3.tif", tmpl_img);
 
   switch(orientation) {
   case Gate::ORIENTATION_FLIPPED_UP_DOWN:
-    flip_up_down<GateTemplateImage>(tmpl_img);
+    flip_up_down(tmpl_img);
     break;
   case Gate::ORIENTATION_FLIPPED_LEFT_RIGHT:
-    flip_left_right<GateTemplateImage>(tmpl_img);
+    flip_left_right(tmpl_img);
     break;
   case Gate::ORIENTATION_FLIPPED_BOTH:
-    flip_both<GateTemplateImage>(tmpl_img);
+    flip_both(tmpl_img);
     break;
   case Gate::ORIENTATION_NORMAL:
     break;
@@ -387,12 +379,12 @@ TemplateMatching::prepared_template TemplateMatching::prepare_template(GateTempl
     scaled_tmpl_height = (double)h / get_scaling_factor();
 
   prep.tmpl_img_normal = TempImage_GS_BYTE_shptr(new TempImage_GS_BYTE(w, h));
-  copy_image<TempImage_GS_BYTE, GateTemplateImage>(prep.tmpl_img_normal, tmpl_img);
+  copy_image(prep.tmpl_img_normal, tmpl_img);
 
   prep.tmpl_img_scaled = TempImage_GS_BYTE_shptr(new TempImage_GS_BYTE(scaled_tmpl_width,
 								       scaled_tmpl_height));
 
-  scale_down_by_power_of_2<TempImage_GS_BYTE, GateTemplateImage>(prep.tmpl_img_scaled, tmpl_img);
+  scale_down_by_power_of_2(prep.tmpl_img_scaled, tmpl_img);
 
 
   // create zero-mean templates
@@ -445,8 +437,8 @@ bool TemplateMatching::add_gate(unsigned int x, unsigned int y,
 				Gate::ORIENTATION orientation,
 				double corr_val, double threshold_hc) {
 
-  if(!layer_insert->exists_gate_in_region(x, x + tmpl->get_width(),
-					  y, y + tmpl->get_height())) {
+  if(!layer_insert->exists_type_in_region<Gate>(x, x + tmpl->get_width(),
+						y, y + tmpl->get_height())) {
 
     Gate_shptr gate(new Gate(x, x + tmpl->get_width(),
 			     y, y + tmpl->get_height(),
@@ -459,7 +451,7 @@ bool TemplateMatching::add_gate(unsigned int x, unsigned int y,
     gate->set_gate_template(tmpl);
 
     LogicModel_shptr lmodel = project->get_logic_model();
-    lmodel->add_object(layer_insert->get_layer_pos(), gate);
+    lmodel->add_object(layer_insert, gate);
     lmodel->update_ports(gate);
 
     stats.hits++;
